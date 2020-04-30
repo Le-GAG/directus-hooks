@@ -1,0 +1,48 @@
+{% extends "base.twig" %}
+{% block content %}
+    <h1>✅ Votre commande est enregistrée.</h1>
+
+    <p>Pour rappel, voici ce que vous avez commandé :</p>
+
+    <table cellpadding="10" border="1" cellspacing="0" width="100%">
+        <thead>
+        <tr>
+            <th>Désignation</th>
+            <th>Quantité</th>
+            <th>Prix</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% set totalPrice = 0 %}
+        {% for item in order.items %}
+            {% set price = item.price * item.quantity %}
+            {% set totalPrice = totalPrice + price %}
+            <tr>
+                <td>{{ item.name }} - {{ item.packaging }} {{ item.capacity }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ price }} €</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+        <tr>
+            <td colspan="3" align="right">Montant total estimé : {{ totalPrice }} €</td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <p>🗓 Rendez-vous le {{ '{{ date }}' }} pour récupérer vos produits et boire un coup !</p>
+
+    <p style="font-size: 12px">
+        Les montants sont donnés à titre indicatif.
+        Le prix à payer dépendra des quantités livrées pour certains produits.
+    </p>
+    <p style="font-size: 12px">
+        En passant commande, vous vous engagez à venir récupérer et payer votre commande le jour de la distribution.
+    </p>
+    <p style="font-size: 12px">
+        Offre réservée aux particuliers. Voir conditions dans les magasins participants.
+        Pour votre santé, consommez de l'alcool avec modération 5 fois par jour et
+        mangez des fruits et légumes en pratiquant une activité physique.
+    </p>
+{% endblock %}
