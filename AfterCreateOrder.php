@@ -8,7 +8,6 @@ namespace Directus\Custom\Hooks\LeGAG;
 
 use Directus\Application\Application;
 use Directus\Application\Container;
-use Directus\Application\Http\Response;
 use Directus\Authentication\Provider;
 use Directus\Authentication\User\UserInterface;
 use Directus\Hook\HookInterface;
@@ -17,7 +16,6 @@ use Directus\Mail\Message;
 use Directus\Services\ItemsService;
 use RuntimeException;
 use Slim\Views\Twig;
-use function Directus\send_mail_with_content;
 use function Directus\send_mail_with_template;
 
 class AfterCreateOrder implements HookInterface
@@ -51,10 +49,16 @@ class AfterCreateOrder implements HookInterface
         $order = $this->getOrder($payload->getData()['data']['id']);
 
         $user = $this->getCurrentUser();
-        send_mail_with_content($body, $contentType, $callback);
+
+        // Prepend an entry to view path
+        $paths = $this->container->get('mail_view')->getLoader()->getPaths();
+        array_unshift($paths, __DIR__ . '/views/mail');
+        unset($this->container['mail_view']); // Can't override it in a single step
+        $this->container['mail_view'] = new Twig($paths);
+
         send_mail_with_template(
             'order-confirmation.twig',
-            [ 'order' => $order ],
+            ['order' => $order],
             function (Message $message) use ($user) {
                 $message->setSubject('Votre commande est enregistrée');
                 $message->setTo($user->getEmail(), sprintf("%s %s", $user->first_name, $user->last_name));
@@ -80,16 +84,18 @@ class AfterCreateOrder implements HookInterface
     protected function getOrder($orderId)
     {
         $itemService = new ItemsService($this->container);
-        $order = $itemService->find('commandes', $orderId, [ 'fields' => [
-            'produits_variantes.produits_variantes_id.produit.nom',
-            'produits_variantes.produits_variantes_id.prix',
-            'produits_variantes.produits_variantes_id.conditionnement.nom',
-            'produits_variantes.produits_variantes_id.contenance',
-            'produits_variantes.quantite',
-        ]]);
+        $order = $itemService->find('commandes', $orderId, [
+            'fields' => [
+                'produits_variantes.produits_variantes_id.produit.nom',
+                'produits_variantes.produits_variantes_id.prix',
+                'produits_variantes.produits_variantes_id.conditionnement.nom',
+                'produits_variantes.produits_variantes_id.contenance',
+                'produits_variantes.quantite',
+            ],
+        ]);
 
         return [
-            'items' => array_map(function($item) {
+            'items' => array_map(function ($item) {
                 return [
                     'name'      => $item['produits_variantes_id']['produit']['nom'],
                     'price'     => $item['produits_variantes_id']['prix'],
